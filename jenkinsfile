@@ -1,37 +1,43 @@
-pipeline{
-    agent any
+pipeline {
+agent any
 
-    stages {
-        stage ('Checkout code') {
-            steps{
-                sh '''
-                git clone https://github.com/jessalmanidhar/natwest-demo.git
-                cd repository
-                git checkout main
-                '''
-            }
-        }
+```
+stages {
 
-        stage ('Run Tests') {
-            steps {
-                sh'''
-                cd repository
-                npm install
-                npm test
-                '''
-            }
+    stage('Checkout') {
+        steps {
+            git(
+                branch: 'main',
+                url: 'https://github.com/jessalmanidhar/natwest-demo.git'
+            )
         }
     }
 
-    post {
-        always {
-             archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
-        }
-        success {
-            echo 'Passed'
-        }
-        failure {
-            echo 'Fai;ed'
+    stage('Install Dependencies') {
+        steps {
+            sh 'npm ci'
         }
     }
+
+    stage('Install Playwright Browsers') {
+        steps {
+            sh 'npx playwright install'
+        }
+    }
+
+    stage('Run Tests') {
+        steps {
+            sh 'npm run test:prod'
+        }
+    }
+}
+
+post {
+    always {
+        archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
+        archiveArtifacts artifacts: 'test-results/**', allowEmptyArchive: true
+    }
+}
+```
+
 }
